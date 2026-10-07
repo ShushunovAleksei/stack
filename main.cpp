@@ -17,10 +17,13 @@ int main()
         return 1;
     }
 
+    
+
     status = stack_push(&my_stack, add_value);
 
     if (status != stack_ok) {
         printf("stack push error: %d\n", status);
+        stack_destroy(&my_stack);
         return 1;
     }
 

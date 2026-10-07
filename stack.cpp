@@ -11,13 +11,64 @@
 #define ON_DEBUG(x)
 #endif
 
+
+void stack_report_error(enum stack_error error, const char* file, int line, const char* function)
+{
+    const char* message = "неизвестная ошибка";
+
+    switch (error) {
+        case stack_ok:
+            return;
+        case stack_null_ptr:
+            message = "передан нулевой указатель";
+            break;
+        case stack_data_null:
+            message = "нет массива данных стека";
+            break;
+        case stack_bad_capacity:
+            message = "вместимость стека должна быть положительной";
+            break;
+        case stack_bad_size:
+            message = "размер стека меньше нуля или больше вместимости";
+            break;
+        case stack_calloc_error:
+            message = "не удалось выделить память для стека";
+            break;
+        case stack_realloc_error:
+            message = "не удалось увеличить память стека";
+            break;
+        case stack_empty:
+            message = "попытка извлечь элемент из пустого стека";
+            break;
+        case left_canary_error:
+            message = "повреждена левая канарейка структуры";
+            break;
+        case right_canary_error:
+            message = "повреждена правая канарейка структуры";
+            break;
+        case left_data_canary_error:
+            message = "повреждена канарейка перед массивом";
+            break;
+        case right_data_canary_error:
+            message = "повреждена канарейка после массива";
+            break;
+        default:
+            break;
+    }
+
+    fprintf(stderr, "%s:%d в %s: %s (код %d)\n",
+            file, line, function, message, error);
+}
+
 enum stack_error stack_construct(struct stack* st, int initial_capacity)
 {
     if (st == NULL) {
+        STACK_REPORT(stack_null_ptr);
         return stack_null_ptr;
     }
 
     if (initial_capacity <= 0) {
+        STACK_REPORT(stack_bad_capacity);
         return stack_bad_capacity;
     }
 
@@ -30,6 +81,7 @@ enum stack_error stack_construct(struct stack* st, int initial_capacity)
 
     st->raw_data = calloc(1, memory_size);
     if (st->raw_data == NULL) {
+        STACK_REPORT(stack_calloc_error);
         return stack_calloc_error;
     }
 
@@ -95,6 +147,7 @@ enum stack_error stack_push(struct stack* st, stack_element value)
     enum stack_error status = stack_verify(st);
 
     if (status != stack_ok) {
+        STACK_REPORT(status);
         return status;
     }
 
@@ -102,6 +155,7 @@ enum stack_error stack_push(struct stack* st, stack_element value)
         status = stack_resize(st);
 
         if (status != stack_ok) {
+            STACK_REPORT(status);
             return status;
         }
     }
@@ -123,14 +177,17 @@ enum stack_error stack_pop(struct stack* st, stack_element* value)
     enum stack_error status = stack_verify(st);
 
     if (status != stack_ok) {
+        STACK_REPORT(status);
         return status;
     }
 
     if (value == NULL) {
+        STACK_REPORT(stack_null_ptr);
         return stack_null_ptr;
     }
 
     if (st->size == 0) {
+        STACK_REPORT(stack_empty);
         return stack_empty;
     }
 
@@ -154,6 +211,7 @@ void stack_dump(const struct stack* st)
     enum stack_error status = stack_verify(st);
 
     if (status != stack_ok) {
+        STACK_REPORT(status);
         printf("stack dump error: %d\n", status);
         return;
     }
@@ -172,6 +230,7 @@ void stack_dump(const struct stack* st)
 enum stack_error stack_destroy(struct stack* st)
 {
     if (st == NULL) {
+        STACK_REPORT(stack_null_ptr);
         return stack_null_ptr;
     }
 
@@ -195,6 +254,7 @@ enum stack_error stack_resize(struct stack* st)
     enum stack_error status = stack_verify(st);
 
     if (status != stack_ok) {
+        STACK_REPORT(status);
         return status;
     }
 
@@ -206,6 +266,7 @@ enum stack_error stack_resize(struct stack* st)
     void* new_raw_data = realloc(st->raw_data, new_memory_size);
 
     if (new_raw_data == NULL) {
+        STACK_REPORT(stack_realloc_error);
         return stack_realloc_error;
     }
 
