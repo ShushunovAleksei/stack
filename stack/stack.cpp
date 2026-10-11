@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include<stdint.h>
 
 #define DEBUG
 
@@ -86,9 +87,9 @@ enum stack_error stack_construct(struct stack* st, int initial_capacity)
     }
 
 
-    long long* left_data_canary = (long long*)st->raw_data ;
-    st->data = (stack_element*)((char*)st->raw_data + sizeof(long long));
-    long long* right_data_canary = (long long*)(st->data + st->capacity);
+    uint64_t* left_data_canary = (uint64_t*)st->raw_data ;
+    st->data = (stack_element*)((char*)st->raw_data + sizeof(uint64_t));
+    uint64_t* right_data_canary = (uint64_t*)(st->data + st->capacity);
     
     *left_data_canary = 0xABCD ;
     *right_data_canary = 0xDCBA ;
@@ -129,8 +130,8 @@ enum stack_error stack_verify(const struct stack* st)
         return stack_data_null;
     }
 
-    long long* left_data_canary = (long long*)st->raw_data;
-    long long* right_data_canary = (long long*)(st->data + st->capacity);
+    uint64_t* left_data_canary = (uint64_t*)st->raw_data;
+    uint64_t* right_data_canary = (uint64_t*)(st->data + st->capacity);
     if(*left_data_canary != 0xABCD){
         return left_data_canary_error;
     }
@@ -171,6 +172,42 @@ enum stack_error stack_push(struct stack* st, stack_element value)
     return stack_ok;
 }
 
+enum stack_error stack_resize(struct stack* st)
+{
+    enum stack_error status = stack_verify(st);
+
+    if (status != stack_ok) {
+        STACK_REPORT(status);
+        return status;
+    }
+
+    int old_capacity = st->capacity;
+    int new_capacity = old_capacity * 2;
+
+    size_t new_memory_size = sizeof(long long) * 2 + sizeof(stack_element) * new_capacity;
+
+    void* new_raw_data = realloc(st->raw_data, new_memory_size);
+
+    if (new_raw_data == NULL) {
+        STACK_REPORT(stack_realloc_error);
+        return stack_realloc_error;
+    }
+
+    st->raw_data = new_raw_data;
+    st->capacity = new_capacity;
+
+    st->data = (stack_element*)((char*)st->raw_data + sizeof(long long));
+
+    long long* left_data_canary = (long long*)st->raw_data;
+    long long* right_data_canary = (long long*)(st->data + st->capacity);
+
+    *left_data_canary = 0xABCD;
+    *right_data_canary = 0xDCBA;
+
+    ON_DEBUG(printf("stack_resize: %d -> %d\n", old_capacity, new_capacity);)
+
+    return stack_ok;
+}
 
 enum stack_error stack_pop(struct stack* st, stack_element* value)
 {
@@ -245,44 +282,6 @@ enum stack_error stack_destroy(struct stack* st)
     st->capacity = 0;
     st->raw_data = NULL;
     
-
-    return stack_ok;
-}
-
-enum stack_error stack_resize(struct stack* st)
-{
-    enum stack_error status = stack_verify(st);
-
-    if (status != stack_ok) {
-        STACK_REPORT(status);
-        return status;
-    }
-
-    int old_capacity = st->capacity;
-    int new_capacity = old_capacity * 2;
-
-    size_t new_memory_size = sizeof(long long) * 2 + sizeof(stack_element) * new_capacity;
-
-    void* new_raw_data = realloc(st->raw_data, new_memory_size);
-
-    if (new_raw_data == NULL) {
-        STACK_REPORT(stack_realloc_error);
-        return stack_realloc_error;
-    }
-
-    st->raw_data = new_raw_data;
-    st->capacity = new_capacity;
-
-    st->data = (stack_element*)((char*)st->raw_data + sizeof(long long));
-
-    long long* left_data_canary = (long long*)st->raw_data;
-
-    long long* right_data_canary = (long long*)(st->data + st->capacity);
-
-    *left_data_canary = 0xABCD;
-    *right_data_canary = 0xDCBA;
-
-    ON_DEBUG(printf("stack_resize: %d -> %d\n", old_capacity, new_capacity);)
 
     return stack_ok;
 }

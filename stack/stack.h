@@ -1,17 +1,17 @@
 #ifndef STACK_H
 #define STACK_H
-
+#include <stdint.h>
 typedef double stack_element;
 
 struct stack {
-    long long left_canary;
+    uint64_t left_canary;
 
     int capacity;
     stack_element* data;
     void* raw_data;
     int size;
 
-    long long right_canary;
+    uint64_t right_canary;
 
 
 };
@@ -28,7 +28,8 @@ enum stack_error {
     left_canary_error = 8,
     right_canary_error = 9,
     left_data_canary_error = 10,
-    right_data_canary_error = 11
+    right_data_canary_error = 11,
+    stack_value_zero = 12
 };
 
 enum stack_error stack_construct(struct stack* st, int initial_capacity);
