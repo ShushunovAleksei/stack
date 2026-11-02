@@ -9,6 +9,7 @@ struct text_command {
     int nlines;
 };
 
+
 enum text_error {
     text_ok = 0,
     text_null_ptr,
@@ -29,11 +30,25 @@ enum command_code {
     cmd_div,
     cmd_out
 };
+struct command_entry{
+    const char* name;
+    enum command_code code;
+};
+
+struct instruction{
+    enum command_code code;
+    double argument;
+};
+
+struct program {
+    struct instruction* commands;
+    int count;
+};
 
 enum text_error open_program_file(const char* filename, FILE** out_file, long* file_size);
 enum text_error text_to_buffer(struct text_command* text, FILE* fp, long size);
 enum text_error split_buffer(struct text_command* text, long size);
 int get_count_lines(char* buffer, long file_size);
-
-
+enum command_code find_command(const char* name);
+enum text_error get_command(const struct text_command* text, struct program* prog);
 #endif

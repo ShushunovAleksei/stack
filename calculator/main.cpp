@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include<string.h>
 #define CHECK_STATUS(status)        \
     do {                            \
         if ((status) != stack_ok) { \
@@ -22,7 +22,7 @@
     } while (0)
 
 
-    
+
 enum stack_error calculator_add(struct stack* st)
 {
     enum stack_error status = stack_verify(st);
@@ -146,27 +146,17 @@ int main()
 
     text_status = split_buffer(&text, size);
     CHECK_TEXT_STATUS(text_status);
-
-    status = stack_push(&st, 10.0);
-    CHECK_STATUS(status);
-
-    status = stack_push(&st, 7.5);
-    CHECK_STATUS(status);
-
-    status = calculator_add(&st);
-    CHECK_STATUS(status);
-
-    stack_element result = 0.0;
-    status = stack_pop(&st, &result);
-    CHECK_STATUS(status);
-
-    printf("Result: %.2f\n", result);
+    
+    struct program prog = {} ;
+    text_status = get_command(&text, &prog);
+    CHECK_TEXT_STATUS(text_status);
 
     status = stack_destroy(&st);
     CHECK_STATUS(status);
 
     free(text.buffer);
     free(text.lines);
+    free(prog.commands);
 
 
     return 0;
