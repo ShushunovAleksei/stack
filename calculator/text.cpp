@@ -119,9 +119,10 @@ enum command_code find_command(const char* name){
         {"SUB",  cmd_sub},
         {"MUL",  cmd_mul},
         {"DIV",  cmd_div},
-        {"OUT",  cmd_out}
+        {"OUT",  cmd_out},
+        {"JMP",  cmd_jmp}
     };
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < 8; i++) {
         if (strcmp(name, command[i].name) == 0) {
             return command[i].code;
         }
@@ -143,7 +144,7 @@ enum text_error get_command(const struct text_command* text, struct program* pro
         return text_malloc_error;
     }
 
-for (int i = 0; i < text->nlines; i++) {
+    for (int i = 0; i < text->nlines; i++) {
         char name[32] = {};
         double argument = 0.0;
         int fields = sscanf(text->lines[i], "%31s %lf", name, &argument);
@@ -157,6 +158,10 @@ for (int i = 0; i < text->nlines; i++) {
             prog->count++;
         } else if (cmd == cmd_push && fields == 1) {
             return text_read_error;
+        }else if(cmd == cmd_jmp && fields == 2){
+            prog->commands[prog->count].code = cmd;
+            prog->commands[prog->count].argument = argument;
+            prog->count++;
         } else {
             prog->commands[prog->count].code = cmd;
             prog->commands[prog->count].argument = argument;
@@ -289,33 +294,42 @@ enum stack_error calculator_out(struct stack* st){
     return stack_ok;
 }
 
-enum stack_error processor(struct program* prog, struct stack* stack){
-    if (prog == NULL || stack == NULL) {
+enum stack_error processor(struct program* prog, struct stack_cnd* cpu){
+    if (prog == NULL || cpu == NULL) {
         return stack_null_ptr;
     }
     enum stack_error status;
 
-    for (int i = 0; i < prog->count; i++) {
-        switch (prog->commands[i].code) {
+    while(cpu->ip < prog->count){
+        switch (prog->commands[cpu->ip].code) {
             case cmd_push:
-                status = stack_push(stack, prog->commands[i].argument);
+                status = stack_push(cpu->st, prog->commands[cpu->ip].argument);
+                cpu->ip++ ;
                 break;
             case cmd_add:
-                status = calculator_add(stack) ;
+                status = calculator_add(cpu->st) ;
+                cpu->ip++ ;
                 break;
             case cmd_sub:
-                status = calculator_sub(stack) ;
+                status = calculator_sub(cpu->st) ;
+                cpu->ip++ ;
                 break;
             case cmd_mul:
-                status = calculator_mul(stack);
+                status = calculator_mul(cpu->st);
+                cpu->ip++ ;
                 break;
             case cmd_div:
-                status = calculator_div(stack);
+                status = calculator_div(cpu->st);
+                cpu->ip++ ;
                 break;
             case cmd_hlt:
                 return stack_ok;
             case cmd_out:
-                status = calculator_out(stack);
+                status = calculator_out(cpu->st);
+                cpu->ip++ ;
+                break;
+            case cmd_jmp:
+                status = calcucator_jmp(cpu, prog);
                 break;
             case cmd_unknown:
             default:
@@ -328,3 +342,7 @@ enum stack_error processor(struct program* prog, struct stack* stack){
     return stack_ok;
 }
 
+enum stack_error calcucator_jmp(struct stack_cnd* cpu, struct program* prog){
+    cpu->ip = prog->commands[cpu->ip].argument ;
+    return stack_ok;
+}

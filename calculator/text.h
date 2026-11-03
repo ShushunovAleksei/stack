@@ -28,7 +28,8 @@ enum command_code {
     cmd_sub,
     cmd_mul,
     cmd_div,
-    cmd_out
+    cmd_out,
+    cmd_jmp
 };
 
 struct command_entry{
@@ -46,6 +47,11 @@ struct program {
     int count;
 };
 
+struct stack_cnd{
+    struct stack* st;
+    int ip ;
+};
+
 enum text_error open_program_file(const char* filename, FILE** out_file, long* file_size);
 enum text_error text_to_buffer(struct text_command* text, FILE* fp, long size);
 enum text_error split_buffer(struct text_command* text, long size);
@@ -56,5 +62,6 @@ enum stack_error calculator_add(struct stack* st);
 enum stack_error calculator_sub(struct stack* st);
 enum stack_error calculator_mul(struct stack* st);
 enum stack_error calculator_div(struct stack* st);
-enum stack_error processor(struct program* prog, struct stack* stack);
+enum stack_error processor(struct program* prog, struct stack_cnd* cpu);
+enum stack_error calcucator_jmp(struct stack_cnd* cpu, struct program* prog);
 #endif

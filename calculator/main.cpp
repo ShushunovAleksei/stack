@@ -75,8 +75,11 @@ int main()
 
     text_status = get_command(&text, &prog);
     CHECK_TEXT_STATUS(text_status, file, text, prog);
+    struct stack_cnd cpu = {} ;
+    cpu.st = &st;
+    cpu.ip = 0;
 
-    enum stack_error execution_status = processor(&prog, &st);
+    enum stack_error execution_status = processor(&prog, &cpu);
 
     status = stack_destroy(&st);
     cleanup_resources(&file, &text, &prog);
