@@ -1,6 +1,7 @@
 #include "text.h"
 #include<string.h>
 #include <stdlib.h>
+#include<math.h>
 
 enum text_error open_program_file(const char* filename, FILE** out_file, long* file_size){
     if (filename == NULL || out_file == NULL || file_size == NULL) {
@@ -131,6 +132,10 @@ enum command_code find_command(const char* name){
 }
 
 enum text_error get_command(const struct text_command* text, struct program* prog){
+    if (text == NULL || prog == NULL) {
+        return text_null_ptr;
+    }
+
     prog->count = 0;
     prog->commands = NULL;
 
@@ -138,7 +143,8 @@ enum text_error get_command(const struct text_command* text, struct program* pro
         return text_ok;
     }
 
-    prog->commands = (struct instruction*)calloc(text->nlines, sizeof(struct instruction));
+    prog->commands = (struct instruction*)calloc(
+        text->nlines, sizeof(struct instruction));
 
     if (prog->commands == NULL) {
         return text_malloc_error;
@@ -147,27 +153,29 @@ enum text_error get_command(const struct text_command* text, struct program* pro
     for (int i = 0; i < text->nlines; i++) {
         char name[32] = {};
         double argument = 0.0;
+
         int fields = sscanf(text->lines[i], "%31s %lf", name, &argument);
+
         if (fields < 1) {
             continue;
         }
+
         enum command_code cmd = find_command(name);
-        if (cmd == cmd_push && fields == 2) {
-            prog->commands[prog->count].code = cmd;
-            prog->commands[prog->count].argument = argument;
-            prog->count++;
-        } else if (cmd == cmd_push && fields == 1) {
+
+        bool needs_argument = (cmd == cmd_push || cmd == cmd_jmp);
+
+        if (cmd == cmd_unknown || (needs_argument && fields != 2)) {
+            free(prog->commands);
+            prog->commands = NULL;
+            prog->count = 0;
             return text_read_error;
-        }else if(cmd == cmd_jmp && fields == 2){
-            prog->commands[prog->count].code = cmd;
-            prog->commands[prog->count].argument = argument;
-            prog->count++;
-        } else {
-            prog->commands[prog->count].code = cmd;
-            prog->commands[prog->count].argument = argument;
-            prog->count++;
         }
+
+        prog->commands[prog->count].code = cmd;
+        prog->commands[prog->count].argument = argument;
+        prog->count++;
     }
+
     return text_ok;
 }
 
@@ -343,6 +351,11 @@ enum stack_error processor(struct program* prog, struct stack_cnd* cpu){
 }
 
 enum stack_error calcucator_jmp(struct stack_cnd* cpu, struct program* prog){
+    if(floor(prog->commands[cpu->ip].argument) != prog->commands[cpu->ip].argument || prog->commands[cpu->ip].argument < 0 || prog->commands[cpu->ip].argument >= prog->count ){
+        return stack_bad_capacity;
+    }
     cpu->ip = prog->commands[cpu->ip].argument ;
     return stack_ok;
 }
+
+
