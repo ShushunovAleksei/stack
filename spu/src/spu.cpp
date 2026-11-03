@@ -1,10 +1,9 @@
-#include "text.h"
-
-#include "../stack/stack.h"
+#include "spu.h"
+#include "assem.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include<string.h>
+
 #define CHECK_STATUS(status)        \
     do {                            \
         if ((status) != stack_ok) { \
@@ -59,8 +58,8 @@ int main()
 
     FILE* file = NULL;
     long size = 0;
-    struct text_command text = {0};
-    struct program prog = {0};
+    struct text_command text = {};
+    struct program prog = {};
 
     enum text_error text_status = open_program_file("program.asm", &file, &size);
     CHECK_TEXT_STATUS(text_status, file, text, prog);
@@ -87,4 +86,61 @@ int main()
     CHECK_STATUS(execution_status);
     CHECK_STATUS(status);
     return 0;
+}
+
+enum stack_error processor(struct program* prog, struct stack_cnd* cpu){
+    if (prog == NULL || cpu == NULL) {
+        return stack_null_ptr;
+    }
+    enum stack_error status;
+
+    while(cpu->ip < prog->count){
+        switch (prog->commands[cpu->ip].code) {
+            case cmd_push:
+                status = stack_push(cpu->st, prog->commands[cpu->ip].argument);
+                cpu->ip++ ;
+                break;
+            case cmd_add:
+                status = calculator_add(cpu->st) ;
+                cpu->ip++ ;
+                break;
+            case cmd_sub:
+                status = calculator_sub(cpu->st) ;
+                cpu->ip++ ;
+                break;
+            case cmd_mul:
+                status = calculator_mul(cpu->st);
+                cpu->ip++ ;
+                break;
+            case cmd_div:
+                status = calculator_div(cpu->st);
+                cpu->ip++ ;
+                break;
+            case cmd_hlt:
+                return stack_ok;
+            case cmd_out:
+                status = calculator_out(cpu->st);
+                cpu->ip++ ;
+                break;
+            case cmd_jmp:
+                status = calcucator_jmp(cpu, prog);
+                break;
+            case cmd_ja:
+                status = calc_ja(cpu, prog);
+                break;
+            case cmd_jb:
+                status = calc_jb(cpu, prog);
+                break;
+            case cmd_je:
+                status = calc_je(cpu, prog);
+                break;
+            case cmd_unknown:
+            default:
+                return stack_null_ptr;
+        }
+        if(status != stack_ok)
+        return status;
+    }
+
+    return stack_ok;
 }
