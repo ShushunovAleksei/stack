@@ -1,6 +1,6 @@
 #ifndef TEXT_H
 #define TEXT_H
-
+#include "../stack/stack.h"
 #include <stdio.h>
 
 struct text_command {
@@ -30,6 +30,7 @@ enum command_code {
     cmd_div,
     cmd_out
 };
+
 struct command_entry{
     const char* name;
     enum command_code code;
@@ -51,4 +52,9 @@ enum text_error split_buffer(struct text_command* text, long size);
 int get_count_lines(char* buffer, long file_size);
 enum command_code find_command(const char* name);
 enum text_error get_command(const struct text_command* text, struct program* prog);
+enum stack_error calculator_add(struct stack* st);
+enum stack_error calculator_sub(struct stack* st);
+enum stack_error calculator_mul(struct stack* st);
+enum stack_error calculator_div(struct stack* st);
+enum stack_error processor(struct program* prog, struct stack* stack);
 #endif

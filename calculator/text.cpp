@@ -2,8 +2,7 @@
 #include<string.h>
 #include <stdlib.h>
 
-enum text_error open_program_file(const char* filename, FILE** out_file, long* file_size)
-{
+enum text_error open_program_file(const char* filename, FILE** out_file, long* file_size){
     if (filename == NULL || out_file == NULL || file_size == NULL) {
         return text_null_ptr;
     }
@@ -37,8 +36,7 @@ enum text_error open_program_file(const char* filename, FILE** out_file, long* f
     return text_ok;
 }
 
-enum text_error text_to_buffer(struct text_command* text, FILE* fp, long size)
-{
+enum text_error text_to_buffer(struct text_command* text, FILE* fp, long size){
     if (text == NULL || fp == NULL) {
         return text_null_ptr;
     }
@@ -60,8 +58,7 @@ enum text_error text_to_buffer(struct text_command* text, FILE* fp, long size)
     return text_ok;
 }
 
-enum text_error split_buffer(struct text_command* text, long size)
-{
+enum text_error split_buffer(struct text_command* text, long size){
     if (text == NULL || text->buffer == NULL) {
         return text_null_ptr;
     }
@@ -98,8 +95,7 @@ enum text_error split_buffer(struct text_command* text, long size)
     return text_ok;
 }
 
-int get_count_lines(char* buffer, long file_size)
-{
+int get_count_lines(char* buffer, long file_size){
     int count = 0;
 
     for (long i = 0; i < file_size; i++) {
@@ -125,9 +121,10 @@ enum command_code find_command(const char* name){
         {"DIV",  cmd_div},
         {"OUT",  cmd_out}
     };
-    for(int i = 0; i < 7; i++){
-        if(strcmp(name, command[i].name) == 0)
-        return command[i].code ;
+    for (int i = 0; i < 7; i++) {
+        if (strcmp(name, command[i].name) == 0) {
+            return command[i].code;
+        }
     }
     return cmd_unknown;
 }
@@ -146,28 +143,188 @@ enum text_error get_command(const struct text_command* text, struct program* pro
         return text_malloc_error;
     }
 
-    for(int i = 0; i < text->nlines; i++){
+for (int i = 0; i < text->nlines; i++) {
         char name[32] = {};
         double argument = 0.0;
         int fields = sscanf(text->lines[i], "%31s %lf", name, &argument);
-        if(fields < 1){
+        if (fields < 1) {
             continue;
         }
         enum command_code cmd = find_command(name);
-        if(cmd == cmd_push && fields == 2){
+        if (cmd == cmd_push && fields == 2) {
             prog->commands[prog->count].code = cmd;
             prog->commands[prog->count].argument = argument;
-            prog->count ++;
-        }else if(cmd == cmd_push && fields == 1){
+            prog->count++;
+        } else if (cmd == cmd_push && fields == 1) {
             return text_read_error;
-        }else{
+        } else {
             prog->commands[prog->count].code = cmd;
             prog->commands[prog->count].argument = argument;
-            prog->count ++;
+            prog->count++;
         }
     }
     return text_ok;
 }
 
-    
-    
+enum stack_error calculator_add(struct stack* st){
+    if (st == NULL) {
+        return stack_null_ptr;
+    }
+
+    if (st->size < 2) {
+        return stack_empty;
+    }
+
+    stack_element first = 0.0;
+    stack_element second = 0.0;
+
+    enum stack_error status = stack_pop(st, &first);
+    if (status != stack_ok) {
+        return status;
+    }
+
+    status = stack_pop(st, &second);
+    if (status != stack_ok) {
+        return status;
+    }
+
+    return stack_push(st, second + first);
+}
+
+enum stack_error calculator_sub(struct stack* st){
+    if (st == NULL) {
+        return stack_null_ptr;
+    }
+
+    if (st->size < 2) {
+        return stack_empty;
+    }
+
+    stack_element first = 0.0;
+    stack_element second = 0.0;
+
+    enum stack_error status = stack_pop(st, &first);
+    if (status != stack_ok) {
+        return status;
+    }
+
+    status = stack_pop(st, &second);
+    if (status != stack_ok) {
+        return status;
+    }
+
+    return stack_push(st, second - first);
+}
+
+enum stack_error calculator_mul(struct stack* st){
+    if (st == NULL) {
+        return stack_null_ptr;
+    }
+
+    if (st->size < 2) {
+        return stack_empty;
+    }
+
+    stack_element first = 0.0;
+    stack_element second = 0.0;
+
+    enum stack_error status = stack_pop(st, &first);
+    if (status != stack_ok) {
+        return status;
+    }
+
+    status = stack_pop(st, &second);
+    if (status != stack_ok) {
+        return status;
+    }
+
+    return stack_push(st, second * first);
+}
+
+enum stack_error calculator_div(struct stack* st){
+    if (st == NULL) {
+        return stack_null_ptr;
+    }
+
+    if (st->size < 2) {
+        return stack_empty;
+    }
+
+    if (st->data[st->size - 1] == 0) {
+        return stack_value_zero;
+    }
+
+    stack_element first = 0.0;
+    stack_element second = 0.0;
+
+    enum stack_error status = stack_pop(st, &first);
+    if (status != stack_ok) {
+        return status;
+    }
+
+    status = stack_pop(st, &second);
+    if (status != stack_ok) {
+        return status;
+    }
+
+    return stack_push(st, second / first);
+}
+
+enum stack_error calculator_out(struct stack* st){
+    if (st == NULL) {
+        return stack_null_ptr;
+    }
+
+    if (st->size == 0) {
+        return stack_empty;
+    }
+
+    stack_element value = 0.0;
+    enum stack_error status = stack_pop(st, &value);
+    if (status != stack_ok) {
+        return status;
+    }
+
+    printf("OUT: %.2f\n", value);
+    return stack_ok;
+}
+
+enum stack_error processor(struct program* prog, struct stack* stack){
+    if (prog == NULL || stack == NULL) {
+        return stack_null_ptr;
+    }
+    enum stack_error status;
+
+    for (int i = 0; i < prog->count; i++) {
+        switch (prog->commands[i].code) {
+            case cmd_push:
+                status = stack_push(stack, prog->commands[i].argument);
+                break;
+            case cmd_add:
+                status = calculator_add(stack) ;
+                break;
+            case cmd_sub:
+                status = calculator_sub(stack) ;
+                break;
+            case cmd_mul:
+                status = calculator_mul(stack);
+                break;
+            case cmd_div:
+                status = calculator_div(stack);
+                break;
+            case cmd_hlt:
+                return stack_ok;
+            case cmd_out:
+                status = calculator_out(stack);
+                break;
+            case cmd_unknown:
+            default:
+                return stack_null_ptr;
+        }
+        if(status != stack_ok)
+        return status;
+    }
+
+    return stack_ok;
+}
+

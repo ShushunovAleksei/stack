@@ -32,6 +32,7 @@ enum stack_error {
     stack_value_zero = 12
 };
 
+
 enum stack_error stack_construct(struct stack* st, int initial_capacity);
 enum stack_error stack_verify(const struct stack* st);
 enum stack_error stack_push(struct stack* st, stack_element value);
