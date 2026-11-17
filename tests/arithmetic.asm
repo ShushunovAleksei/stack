@@ -5,6 +5,7 @@ OUT
 
 PUSH 10
 PUSH 3
+JA 11
 SUB
 OUT
 

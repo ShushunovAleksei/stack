@@ -12,7 +12,22 @@
         }                           \
     } while (0)
 
-static void cleanup_resources(FILE** file,struct text_command* text,struct program* prog){
+#define BINARY_CHECK_STATUS(status, file, text, prog, st) \
+    do { \
+        if ((status) != binary_ok) { \
+            printf("ошибка в записи бинарного файла, ошибка :%d\n", (status)); \
+            cleanup_resources(&(file), &(text), &(prog) , &(loaded_program)); \
+            stack_destroy(&(st)); \
+            return 1; \
+        } \
+    } while (0)
+
+
+static void cleanup_resources(FILE** file,
+                             struct text_command* text,
+                             struct program* prog,
+                             struct program* loaded_program)
+{
     if (file != NULL && *file != NULL) {
         fclose(*file);
         *file = NULL;
@@ -37,21 +52,28 @@ static void cleanup_resources(FILE** file,struct text_command* text,struct progr
         }
         prog->count = 0;
     }
+
+    if (loaded_program != NULL) {
+        if (loaded_program->commands != NULL) {
+            free(loaded_program->commands);
+            loaded_program->commands = NULL;
+        }
+        loaded_program->count = 0;
+    }
 }
 
-#define CHECK_TEXT_STATUS(status, file, text, prog)             \
-    do {                                                       \
-        if ((status) != text_ok) {                              \
-            fprintf(stderr, "Ошибка чтения: %d\n", (status)); \
-            cleanup_resources(&(file), &(text), &(prog));   \
-            stack_destroy(&st);                             \
-            return 1;                                          \
-        }                                                      \
+#define CHECK_TEXT_STATUS(status, file, text, prog, loaded_program)         \
+    do {                                                                    \
+        if ((status) != text_ok) {                                           \
+            fprintf(stderr, "Ошибка чтения: %d\n", (status));              \
+            cleanup_resources(&(file), &(text), &(prog), &(loaded_program)); \
+            stack_destroy(&st);                                              \
+            return 1;                                                       \
+        }                                                                   \
     } while (0)
 
 
-int main()
-{
+int main() {
     struct stack st;
     enum stack_error status = stack_construct(&st, 4);
     CHECK_STATUS(status);
@@ -61,32 +83,46 @@ int main()
     struct text_command text = {};
     struct program prog = {};
 
-    enum text_error text_status = open_program_file("program.asm", &file, &size);
-    CHECK_TEXT_STATUS(text_status, file, text, prog);
+    struct program loaded_program = {};
+
+    enum text_error text_status = open_program_file("tests/arithmetic.asm", &file, &size);
+    CHECK_TEXT_STATUS(text_status, file, text, prog, loaded_program);
 
     text_status = text_to_buffer(&text, file, size);
-    CHECK_TEXT_STATUS(text_status, file, text, prog);
+    CHECK_TEXT_STATUS(text_status, file, text, prog, loaded_program);
     fclose(file);
     file = NULL;
 
     text_status = split_buffer(&text, size);
-    CHECK_TEXT_STATUS(text_status, file, text, prog);
+    CHECK_TEXT_STATUS(text_status, file, text, prog, loaded_program);
 
     text_status = get_command(&text, &prog);
-    CHECK_TEXT_STATUS(text_status, file, text, prog);
+    CHECK_TEXT_STATUS(text_status, file, text, prog, loaded_program);
+
+    enum binary_error write_status = write_binary("binary.bin", &prog);
+    BINARY_CHECK_STATUS(write_status, file, text, prog, st);
+    text_status = text_code_writer(&prog, "program.lst");
+    CHECK_TEXT_STATUS(text_status, file, text, prog, loaded_program);
+
+    write_status = read_binary(&loaded_program, "binary.bin");
+    BINARY_CHECK_STATUS(write_status, file, text, prog, st);
+
+
     struct stack_cnd cpu = {} ;
     cpu.st = &st;
     cpu.ip = 0;
 
-    enum stack_error execution_status = processor(&prog, &cpu);
+    enum stack_error execution_status = processor(&loaded_program, &cpu);
 
     status = stack_destroy(&st);
-    cleanup_resources(&file, &text, &prog);
+    cleanup_resources(&file, &text, &prog, &loaded_program); 
 
     CHECK_STATUS(execution_status);
     CHECK_STATUS(status);
     return 0;
 }
+
+
 
 enum stack_error processor(struct program* prog, struct stack_cnd* cpu){
     if (prog == NULL || cpu == NULL) {

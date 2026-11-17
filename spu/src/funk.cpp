@@ -138,10 +138,10 @@ enum stack_error calcucator_jmp(struct stack_cnd* cpu, struct program* prog){
 enum stack_error calc_ja(struct stack_cnd* cpu, struct program* prog){
     double val = prog->commands[cpu->ip].argument;
     if(floor(val) != val || val < 0 || val >= prog->count || !isfinite(val)){
-        return stack_bad_capacity;
+        return stack_empty;
     }
     if(cpu->st->size < 2){
-        return stack_bad_capacity;
+        return stack_empty;
     }
     enum stack_error status;
     stack_element value1, value2 ;
@@ -164,10 +164,10 @@ enum stack_error calc_ja(struct stack_cnd* cpu, struct program* prog){
 enum stack_error calc_jb(struct stack_cnd* cpu, struct program* prog){
     double val = prog->commands[cpu->ip].argument;
     if(floor(val) != val || val < 0 || val >= prog->count || !isfinite(val)){
-        return stack_bad_capacity;
+        return stack_empty;
     }
     if(cpu->st->size < 2){
-        return stack_bad_capacity;
+        return stack_empty;
     }
     enum stack_error status;
     stack_element value1, value2 ;
@@ -190,10 +190,10 @@ enum stack_error calc_jb(struct stack_cnd* cpu, struct program* prog){
 enum stack_error calc_je(struct stack_cnd* cpu, struct program* prog){
     double val = prog->commands[cpu->ip].argument;
     if(floor(val) != val || val < 0 || val >= prog->count || !isfinite(val)){
-        return stack_bad_capacity;
+        return stack_empty;
     }
     if(cpu->st->size < 2){
-        return stack_bad_capacity;
+        return stack_empty;
     }
     enum stack_error status;
     stack_element value1, value2 ;

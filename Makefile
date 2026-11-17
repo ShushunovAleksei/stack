@@ -2,7 +2,7 @@ CXX = c++
 CPPFLAGS = -Iinclude -Iasm/include -Ispu/include -Istack/include
 CXXFLAGS = -std=c++17 -Wall -Wextra -Wpedantic -g
 
-SOURCES = asm/src/onegin.cpp asm/src/assem.cpp spu/src/spu.cpp spu/src/funk.cpp stack/src/stack.cpp
+SOURCES = asm/src/onegin.cpp asm/src/assem.cpp spu/src/spu.cpp spu/src/funk.cpp stack/src/stack.cpp spu/src/loader.cpp
 HEADERS = include/calc.h asm/include/assem.h spu/include/spu.h stack/include/stack.h
 
 .PHONY: all clean
